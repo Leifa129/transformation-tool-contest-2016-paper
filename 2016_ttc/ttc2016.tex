@@ -1,0 +1,247 @@
+\documentclass[a4paper]{article}
+
+\usepackage{graphicx}
+\usepackage{onecolpceurws}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage[british]{babel}
+\usepackage{mathtools}
+
+\usepackage{listings}
+\usepackage{color}
+\definecolor{name}{rgb}{0.5,0.5,0.5}
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+\lstset{language=Java,
+basicstyle=\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+showspaces=false,
+showstringspaces=false}
+
+\title{Solving the Class Responsibility Assignment using Java and ATL}
+
+\author{
+Leif Arne Johnsen \\ h138166@stud.hib.no
+\and
+Fernando Macías \\ fmac@hib.no
+\and
+Adrian Rutle \\ aru@hib.no
+}
+
+\institution{
+Bergen University College \\
+Norway}
+
+\graphicspath{{images/}}
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+NO ABSTRACT~\cite{Bowman2010}
+\end{abstract}
+
+
+\section{Introduction}
+
+To solve the CRA problem I use Java to evaluate models and to keep track of
+the best solution generated.
+I use ATL to generate new solutions. ATL is called
+programmatically from eclipse.
+I use local search to find a suitable output
+model.
+Simulated annealing is implemented to avoid getting stuck in a local
+optima, in the beginning of the search.
+A local optima is when you can make
+any change to the current solution, but it will never make it better, improving
+the solution requires making changes in more than one step.
+Simulated
+annealing may accept slightly worse solutions in the beginning stages of the
+algorithm, but gets stricter at each iteration.
+This allows it to escape a local
+optima
+
+\section{Solution description}
+
+\subsection{Rules}
+
+I have created four main rules in order to create classes, assign features, reassign features and delete empty classes.
+
+The first rule creates an empty class for each feature in the class model.
+It also sets the name of the classes created, each class is named from 1 to the number of features in the class model.
+We start with an index which is initialized to 0 and incremented every time a new class is created to keep track of the classes created.
+
+The second rule randomly assigns each feature to a class, but the empty classes are still kept.
+
+The third rule randomly reassigns features.
+It goes through each feature.
+When matched with a feature, it will randomly generate a number between 0 and 1.
+If the random number is less than 1 divided by the number of features then the feature is reassigned to a random class.
+
+The fourth rule deletes all empty classes.
+
+The first and second rule could perhaps be combined into one.
+I had some troubles doing this with ATL.
+Because classes were created at each feature match, but at each feature (except the last) only a subset of the classes were created, so the classes created early would gain an unfair advantage if you randomly assigned a feature to the classes created so far.
+
+The third rule is the only one that is called multiple times, it is called on every iteration of the search.
+It is used to slightly modify the solution.
+
+The fourth rule is perhaps not necessary, especially w.r.t. the constraint which is specified in the metamodel.
+
+In addition to these four rules, I have used many other rules.
+Since I have implemented an in-place transformation, some rules were needed to copy the information from the input model to the output model.
+The copy rules could have been avoided if I had used refining mode.
+
+\subsection{Simulated annealing}
+
+The algorithm gets its name from the idea of forging iron.
+Starting at a high temperature, the iron is easy to bend.
+The temperature is decreased with time, as the iron gets colder it gets harder to bend.
+
+
+\subsection{The algorithm}
+
+\begin{enumerate}
+  \item First generate a random class diagram
+  \item Calculate its CRA-Index
+  \item Generate a random neighbouring class diagram
+  \item Calculate the CRA-Index of the new class diagram
+  \item Compare them, if the new CRA-Index is better then move to the new
+class diagram, else maybe move to the new class diagram
+  \item Reduce temperature
+  \item Repeat steps 3 to 6 until the temperature is below the minimum
+temperature
+\end{enumerate}
+
+
+\subsection{Each step in-depth}
+
+\textbf{First generate a random class diagram.}
+This is done using the first and second rule, described earlier.
+After generating a class diagram, set it as best.
+
+\textbf{Calculate its CRI.}
+To calculate the CRA-Index of the generated class diagrams, the provided CRAIndexCalculator is used.
+The craBest is set at this point, which will refer to the value of the currently best class diagram.
+
+\textbf{Generate a random neighbouring class diagram.}
+New class diagrams are generated from the currently best class diagram, it is
+done by applying the third rule (re-assign) on the currently best diagram.
+We take the output from that transformation and set it as the new class diagram.
+\textbf{Calculate the CRA-Index of the new class diagram.}
+Same as before, but only now you give the new class diagram as input to the
+evaluator function.
+Set craNew to the value returned from the evaluation.
+
+\textbf{Compare them.}
+When you compare them you get two possibilities, if the new class diagram is better then you accept it and move on.
+However if the new class diagram is worse or has the same value then you might still accept it.
+The reason for accepting worse class diagrams is that we want to avoid getting stuck in a local optima.
+Although we can not accept a worse class diagram every time.
+Instead we want to take a calculated risk, which means that the bigger difference in CRA-Index between the best and new class diagram, the less likely the new class diagram is to get accepted.
+We call the likelihood of accepting a new class diagram for acceptance probability.
+
+\textit{Acceptance probability}
+We introduce a function to calculate the acceptance probability, it takes as input the CRA-Index of the best class diagram, the new class diagram and the current temperature of the system.
+If the craNew > craBest then return 1.0 else return $e^\frac{craNew - craBest}{T}$
+
+\textbf{Reduce temperature.}
+After each iteration the temperature is decreased geometrically, that is multiplying it by a factor < 1.
+This factor is calculated based on the initial temperature, the ending temperature, and the amount of iterations you wish to loop through.
+It returns the result of this calculation $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$.
+There is not anything special about this function, it only tells you which factor to use in order to get from the starting temperature to the ending temperature in n
+iterations.
+
+\subsection{Choosing the parameters to use for the search}
+
+The algorithm is easy to implement, the challenge lies more in giving the correct parameters, meaning choosing the right starting temperature, deciding how fast the temperature should decrease and lastly choosing which temperature to end the search at.
+
+I have used a temperature of 3 and an ending temperature of 0.01.
+The cooling schedule is derived from the starting temperature, the ending temperature and the number of iterations I want to do.
+Formula used for the schedule is $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$ where n is the number of iterations, Tmin is the end temperature and Tmax is the starting temperature.
+
+The iterations is set manually depending on the input model to evaluate, however I think that these parameters should have been derived from the input models.
+Finding these relations however requires analysis of several output models created from the same input model, using different parameters.
+
+
+\subsection{Program flow code}
+
+\begin{lstlisting}
+//Create a class for each feature
+transform(metaModel, inModel, tempModel, TRANSFORMATION_DIR, "Model2Classes");
+//Generate a random solution
+transform(metaModel, tempModel, bestModel, TRANSFORMATION_DIR, "reassignAll");
+
+double temperature = 3;
+double endTemperature = 0.01;
+double k = calculateCoolingFactor(endTemperature, temperature, 1875);
+//Evaluate the generated solution
+double craBest = evaluate(bestModel);
+
+while(temperature > 0.01){
+	tempModel = EmftvmFactory.eINSTANCE.createModel();
+	tempModel.setResource(rs.createResource(URI.createURI("src/temp.xmi")));
+	//Generate a new solution from the old solution
+	transform(metaModel, bestModel, tempModel,
+		TRANSFORMATION_DIR, "ReassignFeatures");
+
+	//Evaluate the new solution
+	double craNew = evaluate(tempModel);
+
+	//Compare
+	if(acceptanceProbability(craBest, craNew, temperature) > r.nextDouble()){
+		//update best solution
+		bestModel = tempModel;
+		craBest = craNew;
+	}//end if
+
+	//Decrease temperature
+	temperature *= k;
+}//end while
+
+//Delete empty classes from the best solution and transfer it to the outmodel
+transform(metaModel, bestModel, outModel, TRANSFORMATION_DIR,
+"deleteEmptyClasses");
+
+//Save the best solution
+try {
+	outModel.getResource().save(Collections.emptyMap());
+} catch (IOException e) {
+	e.printStackTrace();
+}
+\end{lstlisting}
+
+\subsection{Evaluation}
+
+Correctness and completeness criteria were met for all output models, created from the input models.
+The CRA-Index and the execution time for the output models are given in the table below.
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Output from & A & B & C & D & E\\
+\hline
+CRA-Index & 3.0 & 3.5 & -1.25884 & -15.72579 & -84.61894\\
+\hline
+Performance & 37.533s & 74.847s & 186.919s & 586.493s & 1927.053s\\
+\hline
+Iterations & 1875 & 3750 & 7500 & 15000 & 30000\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+~\cite{Abdelhalim2013}
+
+\bibliographystyle{alpha} 
+\bibliography{samplebib}
+
+\end{document}
