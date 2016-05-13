@@ -163,10 +163,11 @@ We call the likelihood of accepting a new class diagram for acceptance probabili
 
 \textit{Acceptance probability}
 We introduce a function to calculate the acceptance probability, it takes as input the CRA-Index of the best class diagram, the new class diagram and the current temperature of the system.
-If the craNew > craBest then return 1.0 else return $e^\frac{craNew - craBest}{T}$
+If the craNew $>$ craBest then return 1.0 else return 
+\[e^\frac{craNew - craBest}{T}\]
 
 \textbf{Reduce temperature.}
-After each iteration the temperature is decreased geometrically, that is multiplying it by a factor < 1.
+After each iteration the temperature is decreased geometrically, that is multiplying it by a factor $<$ 1.
 This factor is calculated based on the initial temperature, the ending temperature, and the amount of iterations you wish to loop through.
 It returns the result of this calculation $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$.
 There is not anything special about this function, it only tells you which factor to use in order to get from the starting temperature to the ending temperature in n
@@ -252,6 +253,7 @@ Iterations & 1875 & 3750 & 7500 & 15000 & 30000\\
 \end{center}
 \end{table}
 
+%TODO what is this citation?
 ~\cite{Abdelhalim2013}
 
 \bibliographystyle{alpha} 
