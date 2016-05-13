@@ -44,13 +44,21 @@ Norway}
 \maketitle
 
 \begin{abstract}
-NO ABSTRACT~\cite{Bowman2010}
+The objective of Class Responsibility Assignment (CRA) is to produce high-quality designs for object-oriented systems. 
+It deals with the problem of finding a good class diagram for a given set of methods and attributes with functional and data
+relationships among them~\cite{BowmanBL10}.
+Solving this problem is not a trivial task and often involves manual intervention.
+In this paper we describe an automatic solution~\cite{XPTUeJavaAtlvdi} based on the simulated annealing algorithm.
+%TODO one sentence about the algorithm here. + a citation to the algorithm.
+We present also an evaluation of the solution's performance ... 
+%TODO the sentence above needs a better ending!
+
 \end{abstract}
 
 
 \section{Introduction}
 
-To solve the CRA problem we use Java to evaluate models and to keep track of
+To solve the Class Responsibility Assignment (CRA) problem we use Java to evaluate models and to keep track of
 the best solution generated.
 We use ATL to generate new solutions. ATL is called
 programmatically from eclipse.
@@ -223,7 +231,7 @@ try {
 Correctness and completeness criteria were met for all output models, created from the input models.
 The CRA-Index and the execution time for the output models are given in the table below.
 
-\begin{table}[ht]
+\begin{table}[h]
 \begin{center}
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
