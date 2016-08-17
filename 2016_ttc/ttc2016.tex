@@ -51,7 +51,7 @@ The objective of Class Responsibility Assignment (CRA) is to produce high-qualit
 It deals with the problem of finding a good class diagram for a given set of methods and attributes with functional and data
 relationships among them~\cite{BowmanBL10}.
 Solving this problem is not a trivial task and often involves manual intervention.
-In this paper we describe an automatic solution\footnote{\url{https://bitbucket.org/leifarnemsc/solutionone}}\footnote{\url{http://is.ieis.tue.nl/staff/pvgorp/share/?page=ConfigureNewSession\&vdi=XP-TUe_JavaAtl.vdi}} based on the simulated annealing algorithm.
+In this paper we describe an automatic solution\footnote{\url{https://bitbucket.org/leifarnemsc/solutionone}}\footnote{\url{http://is.ieis.tue.nl/staff/pvgorp/share/?page=ConfigureNewSession\&vdi=XP-TUe_JavaAtl.vdi}~\cite{XPTUeJavaAtlvdi}} based on the simulated annealing algorithm.
 We present also an evaluation of the solution's performance w.r.t. execution time and CRA-index.
 \end{abstract}
 
@@ -96,7 +96,6 @@ Therefore the classes created early in the process would gain an unfair advantag
 The third rule is the only one that is called multiple times, it is called on every iteration of the search.
 It is used to slightly modify the solution.
 The fourth rule is perhaps not necessary, especially w.r.t. the constraint which is specified in the metamodel.
-
 In addition to these four rules, we have used some other rules.
 These rules were needed to copy the information from the input model to the output model since we have implemented an in-place transformation.
 The copy rules could have been avoided if we had used refining mode.
@@ -157,7 +156,7 @@ This is done using the first and second rules described in Section~\ref{sec:rule
 After generating the class diagram, we will set it as the best solution.
 
 \item{\textbf{Calculate the CRA-Index.}}
-To calculate the CRA-Index of the generated class diagrams, the provided \texttt{CRAIndexCalculator} is used.
+To calculate the CRA-Index of the generated class diagrams, the provided \texttt{CRAIndexCalculator} is used~\cite{MOMoT}.
 The \texttt{craBest} is set at this point (see~Section~\ref{sec:program_flow}), which will refer to the value of the currently best class diagram.
 
 \item{\textbf{Generate a random neighbouring class diagram.}}
@@ -215,7 +214,7 @@ Finding these relations however requires analysis of several output models creat
 
 \subsection{Program Flow}\label{sec:program_flow}
 
-In this section, we will show the flow of the Java program which implements some of the functionalities of Algorithm~\ref{alg:simanneal}.
+Now we will show the flow of the Java program which implements some of the functionalities of Algorithm~\ref{alg:simanneal}.
 
 \begin{lstlisting}
 //Create a class for each feature
@@ -264,10 +263,12 @@ try {
 
 \subsection{Evaluation}
 
-Correctness and completeness criteria were met for all output models, created from the input models.
-The CRA-Index and the execution time for the output models are given in the table below.
+Correctness and completeness criteria were met for all output models which were created from the input models.
+The CRA-Index and the execution time for the output models are given in the Table~\ref{tab:results}.
 
 \begin{table}[h]
+	\caption{Results of the algorithm applied the given input models}
+	\label{tab:results}
 \begin{center}
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
