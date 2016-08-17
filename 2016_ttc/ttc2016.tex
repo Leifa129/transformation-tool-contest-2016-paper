@@ -8,6 +8,7 @@
 \usepackage{mathtools}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e}
 
 \usepackage{listings}
 \usepackage{color}
@@ -57,26 +58,26 @@ We present also an evaluation of the solution's performance w.r.t. execution tim
 
 \section{Introduction}
 
-To solve the Class Responsibility Assignment (CRA) problem we use Java to evaluate models and to keep track of
-the best solution generated.
-We use ATL to generate new solutions. ATL is called
-programmatically from eclipse.
-We use local search to find a suitable output
-model.
-Simulated annealing is implemented to avoid getting stuck in a local
-optima, in the beginning of the search.
-A local optima is when you can make
-any change to the current solution, but it will never make it better, improving
-the solution requires making changes in more than one step.
-Simulated
-annealing may accept slightly worse solutions in the beginning stages of the
-algorithm, but gets stricter at each iteration.
-This allows it to escape a local
-optima
+Designing a good class diagram which describes a complex real world or software system is not a trivial task; it requires experience, creativity and several iterations.
+Where certain methods and attributes should be located is in most practical cases a matter of human evaluation; and this changes in a series of refactoring modifications.
+This is referred to as the Class Responsibility Assignment problem.
+In this paper we will present an automatic approximation to solve this challenge by using Java and ATL~\cite{ATL}.
 
-\section{Solution description}
+We use Java to evaluate models and to keep track of
+the so-far best solution generated.
+ATL is called programmatically from our Java program to generate new solutions.
+Our method relies simply on using a local search to find a suitable output/solution model.
+Employing local search has the well-known drawback of getting stuck in local optimum; i.e. a solution which is optimal within a neighbouring set of candidate solutions.
+Hence in a local optimum one may modify the current solution without achieving any improvement, therefore forcing modifications in more than one step.
+In order to avoid getting into local optima, we have implemented the simulated annealing algorithm~\cite{Annealing} in the beginning of our search.
+Simulated annealing may accept slightly worse solutions in the beginning stages of the algorithm, but it gets stricter after each iteration.
+This allows us to escape a local optimum.
 
-\subsection{Rules}
+Next we will describe our solution by starting with the rules which are used to create the various artefacts needed for the solution.
+Then we outline the algorithm, detail its steps and evaluate its performance.
+
+
+\section{Transformation Rules}\label{sec:rules}
 
 We have created four main rules in order to create classes, assign features, reassign features and delete empty classes.
 The first rule creates an empty class for each feature in the class model.
@@ -84,14 +85,13 @@ It also sets the name of the classes created, each class is named from 1 to the 
 We start with an index which is initialized to 0 and incremented every time a new class is created to keep track of the classes created.
 The second rule randomly assigns each feature to a class, but the empty classes are still kept.
 The third rule randomly reassigns features.
-It goes through each feature.
-When matched with a feature, it will randomly generate a number between 0 and 1.
+It goes through each feature and when matched with a feature, it will randomly generate a number between 0 and 1.
 If the random number is less than 1 divided by the number of features then the feature is reassigned to a random class.
 The fourth rule deletes all empty classes.
 
 The first and second rules could perhaps be combined into one.
-We had some troubles doing this with ATL because classes were created at each feature match, but at each feature (except the last) only a subset of the classes were created. 
-Therefore the classes created early would gain an unfair advantage if you randomly assigned a feature to the classes created so far.
+We had some troubles doing this with ATL because classes were created at each feature match, but at each feature (except the last one) only a subset of the classes were created. 
+Therefore the classes created early in the process would gain an unfair advantage if we randomly assigned a feature to the classes created so far.
 
 The third rule is the only one that is called multiple times, it is called on every iteration of the search.
 It is used to slightly modify the solution.
@@ -101,80 +101,121 @@ In addition to these four rules, we have used some other rules.
 These rules were needed to copy the information from the input model to the output model since we have implemented an in-place transformation.
 The copy rules could have been avoided if we had used refining mode.
 
-\subsection{Simulated annealing}
+\section{Simulated Annealing Algorithm}
 
-The algorithm gets its name from the idea of forging iron.
+The algorithm gets its name from the idea of forging iron~\cite{Annealing}.
 Starting at a high temperature, the iron is easy to bend.
 The temperature is decreased with time, as the iron gets colder it gets harder to bend.
+Algorithm~\ref{alg:simanneal} shows how we have adapted the simulated annealing algorithm to solve the CRA problem.
 
 
-\subsection{The algorithm}
+\begin{algorithm}[H]
+	\caption{The simulated annealing algorithm adapted to solve the CRA problem}
+	\label{alg:simanneal}
+	\KwIn{A set of related attributes and methods,
+		temperature-threshold,
+		starting-temparature
+		}
+	\KwOut{A class diagram}
+	class-diagram $\leftarrow$ generate-random-class-diagram()\;
+	\While{starting-temperature $>$ temperature-threshold}
+		{
+			old-cra-index $\leftarrow$ calculate-cra-index(class-diagram)\;
+			new-class-diagram $\leftarrow$ generate-random-neighbouring-class-diagram(class-diagram)\;
+			new-cra-index $\leftarrow$ calculate-cra-index(new-class-diagram)\;
+			\If{new-cra-index $>$ old-cra-index}
+			{
+				class-diagram $\leftarrow$ new-class-diagram\;
+			}
+			\Else(based on a random choice:){
+				class-diagram $\leftarrow$ new-class-diagram\;}
+			starting-temperature $\leftarrow$ reduce-temperature()\;			
+		}
+		
+\end{algorithm}
 
-\begin{enumerate}
-  \item First generate a random class diagram
-  \item Calculate its CRA-Index
-  \item Generate a random neighbouring class diagram
-  \item Calculate the CRA-Index of the new class diagram
-  \item Compare them, if the new CRA-Index is better then move to the new
-class diagram, else maybe move to the new class diagram
-  \item Reduce temperature
-  \item Repeat steps 3 to 6 until the temperature is below the minimum
-temperature
-\end{enumerate}
+%\begin{enumerate}
+%  \item Generate a random class diagram
+%  \item Calculate its CRA-Index
+%  \item Generate a random neighbouring class diagram
+%  \item Calculate the CRA-Index of the new class diagram
+%  \item Compare them, if the new CRA-Index is better then move to the new
+%class diagram, else \textit{maybe} move to the new class diagram
+%  \item Reduce temperature
+%  \item Repeat steps 3 to 6 until the temperature is below the minimum
+%temperature
+%\end{enumerate}
 
+~\\
 
-\subsection{Each step in-depth}
+We will now explain the algorithm step by step.
 
-\textbf{First generate a random class diagram.}
-This is done using the first and second rule, described earlier.
-After generating a class diagram, set it as best.
+\begin{description}
+	
+\item{\textbf{Generate a random class diagram.}}
+This is done using the first and second rules described in Section~\ref{sec:rules}.
+After generating the class diagram, we will set it as the best solution.
 
-\textbf{Calculate its CRI.}
-To calculate the CRA-Index of the generated class diagrams, the provided CRAIndexCalculator is used.
-The craBest is set at this point, which will refer to the value of the currently best class diagram.
+\item{\textbf{Calculate the CRA-Index.}}
+To calculate the CRA-Index of the generated class diagrams, the provided \texttt{CRAIndexCalculator} is used.
+The \texttt{craBest} is set at this point (see~Section~\ref{sec:program_flow}), which will refer to the value of the currently best class diagram.
 
-\textbf{Generate a random neighbouring class diagram.}
+\item{\textbf{Generate a random neighbouring class diagram.}}
 New class diagrams are generated from the currently best class diagram, it is
 done by applying the third rule (re-assign) on the currently best diagram.
 We take the output from that transformation and set it as the new class diagram.
-\textbf{Calculate the CRA-Index of the new class diagram.}
+
+\item{\textbf{Calculate the CRA-Index of the new class diagram.}}
 Same as before, but only now you give the new class diagram as input to the
 evaluator function.
-Set craNew to the value returned from the evaluation.
+Set \texttt{craNew} to the value returned from the evaluation.
 
-\textbf{Compare them.}
-When you compare them you get two possibilities, if the new class diagram is better then you accept it and move on.
+\item{\textbf{Compare the old and the new class diagrams.}}
+When we compare the class diagrams we get two possibilities, if the new class diagram is better then you accept it and move on.
 However if the new class diagram is worse or has the same value then you might still accept it.
-The reason for accepting worse class diagrams is that we want to avoid getting stuck in a local optima.
-Although we can not accept a worse class diagram every time.
-Instead we want to take a calculated risk, which means that the bigger difference in CRA-Index between the best and new class diagram, the less likely the new class diagram is to get accepted.
-We call the likelihood of accepting a new class diagram for acceptance probability.
+The reason for accepting worse class diagrams is that we want to avoid getting stuck in a local optimum.
+However, we can not accept a worse class diagram every time.
+Instead we want to take a calculated risk, which means that the bigger the difference in the CRA-Index between the current best and the new class diagram, the less likely that we accept the new class diagram.
+We call the likelihood of accepting a new class diagram for \textit{Acceptance probability}.
+We introduce a function to calculate the acceptance probability, it takes as input the CRA-Index of the current best and the new class diagrams (\texttt{craBest} and \texttt{craNew}, respectively), as well as the current temperature \texttt{T} of the system.
+The function is specified as follows:
 
-\textit{Acceptance probability}
-We introduce a function to calculate the acceptance probability, it takes as input the CRA-Index of the best class diagram, the new class diagram and the current temperature of the system.
-If the craNew $>$ craBest then return 1.0 else return 
-\[e^\frac{craNew - craBest}{T}\]
+\begin{lstlisting}[mathescape=true]
+	if craNew $>$ craBest:
+		return $1.0$;
+	else
+		return $e^\frac{\texttt{craNew} - \texttt{craBest}}{\texttt{T}}$;
+\end{lstlisting}
 
-\textbf{Reduce temperature.}
+\item{\textbf{Reduce temperature.}}
 After each iteration the temperature is decreased geometrically, that is multiplying it by a factor $<$ 1.
-This factor is calculated based on the initial temperature, the ending temperature, and the amount of iterations you wish to loop through.
-It returns the result of this calculation $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$.
-There is not anything special about this function, it only tells you which factor to use in order to get from the starting temperature to the ending temperature in n
-iterations.
+This factor is calculated based on the initial temperature, the ending temperature, and the amount of iterations we want to loop through.
+It returns the result of the following calculation:
 
-\subsection{Choosing the parameters to use for the search}
+\begin{lstlisting}[mathescape=true]
+	return $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$;
+\end{lstlisting}
 
-The algorithm is easy to implement, the challenge lies more in giving the correct parameters, meaning choosing the right starting temperature, deciding how fast the temperature should decrease and lastly choosing which temperature to end the search at.
+This function decides which factor to use in order to get from the starting temperature to the ending temperature in $n$ iterations.
 
-We have used a temperature of 3 and an ending temperature of 0.01.
+\end{description}
+
+\subsection{Choosing Initialisation Parameters}
+
+The algorithm is easy to implement, the challenge lies more in deciding on the correct initialisation parameters, 
+that is, choosing the right starting temperature, deciding how fast the temperature should decrease and lastly choosing at which temperature to end the search.
+
+We have used a starting temperature of 3 and an ending temperature of 0.01.
 The cooling schedule is derived from the starting temperature, the ending temperature and the number of times we want to iterate.
-Formula used for the schedule is $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$ where n is the number of iterations, $T_{min}$ is the end temperature and Tmax is the starting temperature.
+The formula used for the schedule is, as shown above,  $(\frac{T_{min}}{T_{max}})^\frac{1}{n}$ where $n$ is the number of iterations, $T_{min}$ is the end temperature and $T_{max}$ is the starting temperature.
 
-The iterations is set manually depending on the input model to evaluate, however we think that these parameters should have been derived from the input models.
+The iterations are set manually depending on the input model to evaluate, however we think that these parameters should have been derived from the input models.
 Finding these relations however requires analysis of several output models created from the same input model, using different parameters.
 
 
-\subsection{Program flow code}
+\subsection{Program Flow}\label{sec:program_flow}
+
+In this section, we will show the flow of the Java program which implements some of the functionalities of Algorithm~\ref{alg:simanneal}.
 
 \begin{lstlisting}
 //Create a class for each feature
